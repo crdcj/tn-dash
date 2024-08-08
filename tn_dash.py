@@ -1,68 +1,94 @@
 import pandas as pd
-import plotly.express as px
+import altair as alt
 import streamlit as st
+import pyield as pyd
+import config as cfg
+from scripts.datetime_selector import dt_selector
+from scripts.plotting_functions import chart_curves
 
-# Configurações e constantes
-RATES_URL = (
-    "https://raw.githubusercontent.com/crdcj/pyield-data/main/anbima_rates.csv.gz"
+
+st.markdown(
+    """<style>.block-container{max-width: 86rem !important;}</style>""",
+    unsafe_allow_html=True,
 )
 
-df = pd.read_csv(RATES_URL, parse_dates=["ReferenceDate", "MaturityDate"])
+def run_interface():
 
-# Título do painel
-st.markdown("## Títulos do Tesouro Nacional")
+    # Título do painel
+    st.markdown("## Títulos do Tesouro Nacional")
 
-# Determinar a última data disponível no conjunto de dados
-last_date = df["ReferenceDate"].max().date()
+    dt_selector()
 
-# Criar colunas para os campos
-col1, col2, col3 = st.columns(3)
+    bond_list = ["LTN", "NTN-F", "LFT", "NTN-B"]
+    columns_containers = st.columns([6,4])
+    containers = [columns_containers[i].container(border=True) for i in range(2)]
 
-# Campo de data de referência
-with col1:
-    selected_reference_date = st.date_input(
-        "Data de referência", value=last_date, format="DD/MM/YYYY"
-    )
+    df_rates = cfg.df_rates.copy()
+    # df_rates['ReferenceDate'] = df_rates['ReferenceDate'].astype('str')
+    # df_rates['MaturityDate'] = df_rates['MaturityDate'].astype('str')
 
-# Filtrar os dados com base na data de referência selecionada
-available_bonds = df[df["ReferenceDate"].dt.date == selected_reference_date]
+    df_rates.rename(columns={'ReferenceDate':'Date'}, inplace=True)
 
-# Filtro por tipo de título
-bond_types = available_bonds["BondType"].unique()
-with col2:
-    selected_bond_type = st.selectbox("Tipo de título", bond_types)
+    df_rates = df_rates.query(f"Date >= '{st.session_state.start_date}' and Date <='{st.session_state.end_date}'")
+    df_rates = df_rates.query(f"BondType == '{st.session_state.titulo}'")
 
-# Filtro por data de vencimento baseado no tipo de título selecionado
-maturity_dates = (
-    available_bonds[available_bonds["BondType"] == selected_bond_type]["MaturityDate"]
-    .dt.strftime("%d/%m/%Y")
-    .unique()
-)
-with col3:
-    selected_maturity_date = st.selectbox("Data de vencimento", maturity_dates)
+    df_rates.reset_index(drop=True, inplace=True)
 
-# Converter a data de vencimento selecionada para datetime
-selected_maturity_date = pd.to_datetime(selected_maturity_date, format="%d/%m/%Y")
+    df_rates['Date'] = df_rates['Date'].dt.strftime('%d-%m-%Y')
+    df_rates['MaturityDate'] = df_rates['MaturityDate'].dt.strftime('%d-%m-%Y')
 
-# Filtrar os dados para o gráfico
-filtered_df = df[
-    (df["BondType"] == selected_bond_type)
-    & (df["MaturityDate"] == selected_maturity_date)
-]
+    df_rates['Date'] = pd.to_datetime(df_rates['Date'], format='%d-%m-%Y')
 
-# Gráfico de taxas indicativas ao longo do tempo
-fig = px.line(
-    filtered_df,
-    x="ReferenceDate",
-    y="IndicativeRate",
-    title=f"Taxas Indicativas da {selected_bond_type} com vencimento em {selected_maturity_date.strftime('%d/%m/%Y')}",
-    labels={"IndicativeRate": "Taxa Indicativa (%)", "ReferenceDate": "Data"},
-)
+    df_rates['Days to Expiration'] = pyd.bday.count(start=df_rates['Date'], end=df_rates['MaturityDate']) / 252
 
-# Configurar o eixo X
-fig.update_layout(
-    xaxis=dict(showgrid=True, tickformat="%Y", dtick="M12"),
-    xaxis_title="Data",
-)
+    # df_rates["Date"] = df_rates["Date"].dt.strftime("%Y/%m/%d")
 
-st.plotly_chart(fig)
+    column_curves = st.columns([1, 6, 1])
+
+    cl = chart_curves(df_rates)
+    # column_curves[1].altair_chart(cl, use_container_width=True)
+    containers[0].altair_chart(cl, use_container_width=True)
+
+    # st.dataframe(df_rates)
+
+    # sel_vencimento = st.session_state.columns_datetime[5].selectbox('Vencimento',df_rates['MaturityDate'].unique())
+
+    # chart_venc = alt.Chart(df_rates.query(f'MaturityDate == "{sel_vencimento}"')).mark_line().encode(alt.X('Date:T'), alt.Y('IndicativeRate', scale = alt.Scale(domain=[df_rates.query(f'MaturityDate == "{sel_vencimento}"')['IndicativeRate'].min(), df_rates.query(f'MaturityDate == "{sel_vencimento}"')['IndicativeRate'].max()]))).properties(width=300, height=300)
+
+    # st.session_state.columns_titulo = st.columns(7)
+    # st.session_state.titulo = (
+    #     st.session_state.columns_titulo[0].selectbox("Título", ['LTN', "NTN-F", "NTN-B", "LFT"])
+    # )
+
+    # chart_venc = (
+    #         alt.Chart(df_rates).mark_line(interpolate='basis').encode(
+    #             alt.X('Date:T'),
+    #             alt.Y(
+    #                 'IndicativeRate',
+    #                 scale=alt.Scale(
+    #                     domain=[
+    #                         df_rates['IndicativeRate'].min(),
+    #                         df_rates['IndicativeRate'].max()
+    #                         ]
+    #                     )
+    #                 ),
+    #             facet=alt.Facet('MaturityDate').columns(5)
+    #             ).properties(
+    #                 width=150,
+    #                 height=150
+    #                 )
+    #         )
+    #
+    # column_lines = st.columns([5, 1, 5])
+    # column_lines[0].altair_chart(chart_venc, use_container_width=False)
+
+
+
+def main():
+    # init_session()
+    run_interface()
+
+
+if __name__ == "__main__":
+    main()
+
