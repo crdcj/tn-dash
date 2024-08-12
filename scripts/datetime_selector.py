@@ -9,7 +9,7 @@ def dt_selector():
 
     titulo_list = ["LTN", "NTN-F", "NTN-B", "LFT"]
 
-    st.session_state.columns_datetime = st.columns(7)
+    st.session_state.columns_datetime = st.columns(8)
 
     st.session_state.start_date = (
         st.session_state.columns_datetime[0].date_input("Data de Início", input_date).strftime("%Y-%m-%d")
@@ -22,3 +22,4 @@ def dt_selector():
     st.session_state.titulo = (
         st.session_state.columns_datetime[3].selectbox("Título", titulo_list)
     )
+

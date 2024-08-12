@@ -3,7 +3,7 @@ import altair as alt
 import streamlit as st
 
 
-def chart_curves(df, ):
+def chart_curves(df):
     em_space = "\u2003"
 
     df = df.copy()
@@ -11,10 +11,14 @@ def chart_curves(df, ):
 
     if st.session_state.titulo=='NTN-B':
         label_titulo = 'Taxa Real'
+        coluna_taxa = 'IndicativeRate'
+
     elif st.session_state.titulo=='LFT':
         label_titulo = 'Prêmio'
+        coluna_taxa = 'IndicativeRate'
     else:
-        label_titulo = 'Taxa'
+        label_titulo = 'Prêmio'
+        coluna_taxa = 'premio'
 
     start_date = st.session_state.start_date#.strftime("%d/%m/%Y")
     end_date = st.session_state.end_date#.strftime("%d/%m/%Y")
@@ -54,18 +58,18 @@ def chart_curves(df, ):
                 ),
             ),
             alt.Y(
-                "IndicativeRate:Q",
+                f"{coluna_taxa}:Q",
                 scale=alt.Scale(
                     domain=[
-                        df["IndicativeRate"].min(),
-                        df["IndicativeRate"].max(),
+                        df[coluna_taxa].min(),
+                        df[coluna_taxa].max(),
                     ],
                 ),
                 axis=alt.Axis(
                     title=f"{label_titulo}",
                     labelFontSize=13,
                     titleFontSize=16,
-                    format=".1f",
+                    format=".2f",
                     labels=True,
                 ),
             ),
@@ -78,7 +82,7 @@ def chart_curves(df, ):
             tooltip=[
                 "Date:T",
                 "Days to Expiration:Q",
-                "IndicativeRate:Q",
+                f"{coluna_taxa}:Q",
             ],
         )
     )
@@ -119,8 +123,8 @@ def chart_curves(df, ):
 
     chart_line = chart_line.properties(
         width=800,
-        height=200,
-        title=f"Curvas {st.session_state.titulo}"#: de {start_date} até {end_date}",
+        height=300,
+        title="Curvas"#: de {start_date} até {end_date}",
     )
 
     chart_total = chart_line & chart_legend
