@@ -23,8 +23,13 @@ def run_interface():
     dt_selector()
 
     st.write("---")
-    st.markdown(f'### {st.session_state.titulo}')
+    columns_titulo = st.columns([1,5,1,3])
+    columns_titulo[0].markdown(f'### {st.session_state.titulo}')
+    if st.session_state.titulo == "NTN-B":
+        on = columns_titulo[1].toggle('Retirar as taxas menores do que 6 meses.')
 
+    else:
+        on = False
 
     # bond_list = ["LTN", "NTN-F", "LFT", "NTN-B"]
     columns_containers = st.columns([5,5])
@@ -39,7 +44,24 @@ def run_interface():
     st.write("---")
 
     column_curves = st.columns([1, 6, 1])
+    # df_rates['Date'] = pd.to_datetime(df_rates['Date'], format='%Y-%m-%d')
+    # df_rates['Date'] = df_rates['Date'].astype('str')
 
+    # slider_start, slider_end = containers[0].slider(
+    #         '',
+    #         min_value=df_rates['Days to Expiration'].min(),
+    #         max_value=df_rates['Days to Expiration'].max(),
+    #         value=(
+    #             df_rates['Days to Expiration'].min(),
+    #             df_rates['Days to Expiration'].max(),
+    #             ),
+    #         # format='DD/MM/YYYY'
+    #         )
+
+    if on:
+        df_rates = df_rates[df_rates['Days to Expiration'] >= 0.5]
+
+    # cl = chart_curves(df_rates[(df_rates['Days to Expiration'] >= slider_start) & (df_rates['Days to Expiration'] <= slider_end)])
     cl = chart_curves(df_rates)
     # column_curves[1].altair_chart(cl, use_container_width=True)
 
