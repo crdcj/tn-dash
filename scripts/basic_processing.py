@@ -20,6 +20,8 @@ def process_df(start_date, end_date, titulo):
 
     df_rates['Date'] = pd.to_datetime(df_rates['Date'], format='%d-%m-%Y')
 
+    df_rates['bdays'] = pyd.bday.count(start=df_rates['Date'], end=df_rates['MaturityDate'])
+
     df_rates['Days to Expiration'] = pyd.bday.count(start=df_rates['Date'], end=df_rates['MaturityDate']) / 252
 
     if titulo == 'LTN' or titulo == 'NTN-F':
