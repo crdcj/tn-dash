@@ -43,6 +43,9 @@ def run_interface():
         st.session_state.on = columns_painel_1[1].toggle('taxas $< 6$ meses.')
         st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
 
+    if st.session_state.titulo == "LFT":
+        st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
+
     elif st.session_state.titulo == 'LTN':
         st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
 
@@ -100,7 +103,7 @@ def run_interface():
     elif st.session_state.titulo == 'LFT':
         df_rates['premio_taxa'] = df_rates['IndicativeRate'] / 100
 
-    st.dataframe(df_rates)
+    # st.dataframe(df_rates)
 
     list_interpolations, list_dates = interpolate_rates_for_dates(df_rates, venc_interp, st.session_state.start_date, st.session_state.end_date)
     df_interpolation = pd.DataFrame({'Date':list_dates, 'premio': list_interpolations})
@@ -154,7 +157,7 @@ def run_interface():
 
 
     # st.dataframe(df_bps)
-    st.dataframe(df_interpolation)
+    # st.dataframe(df_interpolation)
 
     chart_interpolation = chart_lines(df_interpolation, venc_interp, st.session_state.toggle_taxa_1, em_bps=toggle_bps)
     containers_painel_2[0].altair_chart(chart_interpolation, use_container_width=False)
