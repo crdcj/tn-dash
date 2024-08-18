@@ -3,9 +3,9 @@ import altair as alt
 import streamlit as st
 import pyield as pyd
 from pyield.interpolator import Interpolator
-# import config as cfg
+import config as cfg
 from scripts.datetime_selector import dt_selector
-from scripts.plotting_functions import chart_curves
+from scripts.plotting_functions import chart_curves, chart_lines
 from scripts.basic_processing import process_df
 from scripts.interpolate_interval import interpolate_rates_for_dates
 import titulos
@@ -27,15 +27,33 @@ def run_interface():
     st.write("---")
     columns_titulo = st.columns([1,5,1,3])
     columns_titulo[0].markdown(f'### {st.session_state.titulo}')
-    if st.session_state.titulo == "NTN-B":
-        on = columns_titulo[1].toggle('Retirar as taxas menores do que 6 meses.')
-
-    else:
-        on = False
 
     # bond_list = ["LTN", "NTN-F", "LFT", "NTN-B"]
     columns_containers = st.columns([5,5])
-    containers = [columns_containers[i].container(border=True) for i in range(2)]
+    containers = [columns_containers[i].container(border=True, height=700) for i in range(2)]
+     
+# --------------- Container 1 -----------------------------
+
+    containers_painel_1 = [containers[0].container(border=False) for i in range(2)]
+    # containers[0].write('Curvas')
+
+    columns_painel_1 = containers_painel_1[1].columns([2,8])
+
+    if st.session_state.titulo == "NTN-B":
+        st.session_state.on = columns_painel_1[1].toggle('taxas $< 6$ meses.')
+        st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
+
+    elif st.session_state.titulo == 'LTN':
+        st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
+
+        st.session_state.on = False
+
+    elif st.session_state.titulo == 'NTN-F':
+        st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
+        if not st.session_state.toggle_taxa_1:
+            st.session_state.toggle_premio_limpo = columns_painel_1[1].toggle('prêmio limpo')
+
+        st.session_state.on = False
 
     df_rates = process_df(
             st.session_state.start_date,
@@ -46,70 +64,113 @@ def run_interface():
     st.write("---")
 
     column_curves = st.columns([1, 6, 1])
-    # df_rates['Date'] = pd.to_datetime(df_rates['Date'], format='%Y-%m-%d')
-    # df_rates['Date'] = df_rates['Date'].astype('str')
 
-    # slider_start, slider_end = containers[0].slider(
-    #         '',
-    #         min_value=df_rates['Days to Expiration'].min(),
-    #         max_value=df_rates['Days to Expiration'].max(),
-    #         value=(
-    #             df_rates['Days to Expiration'].min(),
-    #             df_rates['Days to Expiration'].max(),
-    #             ),
-    #         # format='DD/MM/YYYY'
-    #         )
-
-    if on:
+    if st.session_state.on:
         df_rates = df_rates[df_rates['Days to Expiration'] >= 0.5]
 
-    # cl = chart_curves(df_rates[(df_rates['Days to Expiration'] >= slider_start) & (df_rates['Days to Expiration'] <= slider_end)])
+    cl = chart_curves(df_rates, st.session_state.toggle_taxa_1, st.session_state.toggle_premio_limpo)
 
-    cl = chart_curves(df_rates)
-    # column_curves[1].altair_chart(cl, use_container_width=True)
+    containers_painel_1[0].altair_chart(cl, use_container_width=True)
 
-    containers[0].altair_chart(cl, use_container_width=True)
+# --------------- Container 2 -----------------------------
 
-    # st.dataframe(df_rates[['Date', 'Days to Expiration', 'reference_date', 'premio']])
-    venc_interp = float(st.session_state.columns_datetime[4].text_input('vencimento interpolação','1'))
-    # st.write(df_rates)
+    containers_painel_2 = [containers[1].container(border=False) for i in range(2)]
+
+    columns_painel_2 = containers_painel_2[1].columns(3)
+
+    venc_interp = float(columns_painel_2[0].text_input('Vértices de referência (em anos)','1.5').replace(',','.'))
+    if venc_interp == int(venc_interp):
+        venc_interp = int(venc_interp)
+    venc_interp_2 = float(columns_painel_2[1].text_input('','0').replace(',', '.'))
+    if venc_interp_2 == int(venc_interp_2):
+        venc_interp_2 = int(venc_interp_2)
+    venc_interp_3 = float(columns_painel_2[2].text_input(' ','0').replace(',', '.'))
+    if venc_interp_3 == int(venc_interp_3):
+        venc_interp_3 = int(venc_interp_3)
+
 
     if st.session_state.titulo == 'LTN' or st.session_state.titulo == 'NTN-F':
-        df_rates['premio_taxa'] = df_rates['premio'] / 100
-    else:
+        if st.session_state.toggle_taxa_1:
+            df_rates['premio_taxa'] = df_rates['IndicativeRate'] / 100
+        else:
+            df_rates['premio_taxa'] = df_rates['premio'] / 100
+    elif st.session_state.titulo == 'NTN-B':
         df_rates['premio_taxa'] = df_rates['IndicativeRate'] / 100
+
+    elif st.session_state.titulo == 'LFT':
+        df_rates['premio_taxa'] = df_rates['IndicativeRate'] / 100
+
+    st.dataframe(df_rates)
 
     list_interpolations, list_dates = interpolate_rates_for_dates(df_rates, venc_interp, st.session_state.start_date, st.session_state.end_date)
     df_interpolation = pd.DataFrame({'Date':list_dates, 'premio': list_interpolations})
     df_interpolation['premio'] = df_interpolation['premio'] * 100
-    # st.dataframe(df_interpolation)
+    df_interpolation['vertice'] = str(venc_interp)
+
+    if venc_interp_2 > 0:
+        list_interpolations, list_dates = interpolate_rates_for_dates(df_rates, venc_interp_2, st.session_state.start_date, st.session_state.end_date)
+        df_temp = pd.DataFrame({'Date':list_dates, 'premio': list_interpolations})
+        df_temp['premio'] = df_temp['premio'] * 100
+        df_temp['vertice'] = str(venc_interp_2)
+
+        df_interpolation = pd.concat([df_interpolation, df_temp])
+
+    if venc_interp_3 > 0:
+        list_interpolations, list_dates = interpolate_rates_for_dates(df_rates, venc_interp_3, st.session_state.start_date, st.session_state.end_date)
+        df_temp = pd.DataFrame({'Date':list_dates, 'premio': list_interpolations})
+        df_temp['premio'] = df_temp['premio'] * 100
+        df_temp['vertice'] = str(venc_interp_3)
+
+        df_interpolation = pd.concat([df_interpolation, df_temp])
 
     # st.write(list_interpolations)
 
     # containers[1].dataframe(df_rates_vencimentos)
     # st.dataframe(df_rates)
 
-    chart_lines = alt.Chart(df_interpolation, title='Série histórica').mark_line(interpolate='monotone', size=4).encode(
-            alt.X('Date', title='Data'),
-            alt.Y(
-                'premio:Q',
-                title='Taxa',
-                scale=alt.Scale(
-                    domain=[
-                        df_interpolation["premio"].min(),
-                        df_interpolation["premio"].max(),
-                    ],),
-                ),
-            tooltip = ['Date', 'premio']
-            ).properties(width=600, height=520)
 
-    containers[1].altair_chart(chart_lines, use_container_width=False)
+    columns_toggle = containers_painel_2[1].columns(3)
+    toggle_bps = columns_toggle[0].toggle('variação em bps')
+    # toggle_taxa = columns_toggle[1].toggle('taxa')
+    # toggle_taxa=True
+
+    if toggle_bps:
+        df_interpolation = df_interpolation.sort_values(by=['vertice', 'Date'])
+
+    # Define a function to calculate the basis point change
+    def calculate_basis_point_change(group):
+        # Get the 'premio' value of the first date
+        reference_premio = group['premio'].iloc[0]
+        # Calculate the change in 'premio' relative to the reference
+        if st.session_state.toggle_taxa_1:
+            group['basis_point_change'] = (group['premio'] - reference_premio) * 100
+        else:
+            group['basis_point_change'] = (group['premio'] - reference_premio)
+
+        return group
+
+    # Group by 'vertice' and apply the function to each group
+    df_interpolation = df_interpolation.groupby('vertice').apply(calculate_basis_point_change).reset_index(drop=True)
+
+
+    # st.dataframe(df_bps)
+    st.dataframe(df_interpolation)
+
+    chart_interpolation = chart_lines(df_interpolation, venc_interp, st.session_state.toggle_taxa_1, em_bps=toggle_bps)
+    containers_painel_2[0].altair_chart(chart_interpolation, use_container_width=False)
 
 
     # st.dataframe(df_rates_vencimentos)
 
+def init_session():
+    if 'on' not in st.session_state:
+        st.session_state.on = False
+
+    if 'toggle_premio_limpo' not in st.session_state:
+        st.session_state.toggle_premio_limpo = False
+
 def main():
-    # init_session()
+    init_session()
     run_interface()
 
 

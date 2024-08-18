@@ -29,13 +29,10 @@ def interpolate_rates_for_dates(df, days_to_expiration, start_date, end_date):
         known_bdays = ref_date_df['bdays'].tolist()
         known_rates = ref_date_df['premio_taxa'].tolist() 
         interpolator = Interpolator("flat_forward", known_bdays, known_rates)
-        # st.write(ref_date)
-        # st.write(known_rates)
-        # st.write(known_bdays)
 
         # Interpolate the rate for the given days_to_expiration
         try:
-            interpolated_rate = interpolator(days_to_expiration * 252)
+            interpolated_rate = round(interpolator(days_to_expiration * 252),6)
             interpolations.append(interpolated_rate)
             dates.append(ref_date.strftime("%Y-%m-%d"))
         except:

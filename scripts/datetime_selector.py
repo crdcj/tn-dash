@@ -20,6 +20,6 @@ def dt_selector():
     )
 
     st.session_state.titulo = (
-        st.session_state.columns_datetime[3].selectbox("Título", titulo_list)
+        st.session_state.columns_datetime[2].selectbox("Título", titulo_list)
     )
 

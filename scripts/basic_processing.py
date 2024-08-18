@@ -4,7 +4,7 @@ import config as cfg
 
 def process_df(start_date, end_date, titulo):
 
-    df_rates = cfg.df_rates.copy()
+    df_rates = cfg.df_anbima.copy()
     # df_rates['ReferenceDate'] = df_rates['ReferenceDate'].astype('str')
     # df_rates['MaturityDate'] = df_rates['MaturityDate'].astype('str')
 
