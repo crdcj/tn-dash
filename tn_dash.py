@@ -27,7 +27,6 @@ def run_interface():
     columns_titulo = st.columns([1,5,1,3])
     columns_titulo[0].markdown(f'### {st.session_state.titulo}')
 
-    # bond_list = ["LTN", "NTN-F", "LFT", "NTN-B"]
     columns_containers = st.columns([5,5])
     containers = [columns_containers[i].container(border=True, height=700) for i in range(2)]
      
@@ -37,25 +36,6 @@ def run_interface():
     # containers[0].write('Curvas')
 
     columns_painel_1 = containers_painel_1[1].columns([2,8])
-
-    # if st.session_state.titulo == "NTN-B":
-    #     st.session_state.on = columns_painel_1[1].toggle('taxas $< 6$ meses.')
-    #     st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
-    #
-    # elif st.session_state.titulo == "LFT":
-    #     st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
-    #
-    # elif st.session_state.titulo == 'LTN':
-    #     st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
-    #
-    #     st.session_state.on = False
-
-    # elif st.session_state.titulo == 'NTN-F':
-    #     st.session_state.toggle_taxa_1 = columns_painel_1[0].toggle('taxa')
-    #     if not st.session_state.toggle_taxa_1:
-    #         st.session_state.toggle_premio_limpo = columns_painel_1[1].toggle('prêmio limpo')
-
-        # st.session_state.on = False
 
     df_rates = process_df(
             st.session_state.start_date,
@@ -153,7 +133,10 @@ def run_interface():
         if st.session_state.toggle_taxa_1:
             group['basis_point_change'] = (group['premio'] - reference_premio) * 100
         else:
-            group['basis_point_change'] = (group['premio'] - reference_premio)
+            if st.session_state.titulo == 'NTN-B' or st.session_state.titulo == 'LFT':
+                group['basis_point_change'] = (group['premio'] - reference_premio) * 100
+            else:
+                group['basis_point_change'] = (group['premio'] - reference_premio)
 
         return group
 
