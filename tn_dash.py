@@ -160,7 +160,7 @@ def run_interface():
     # Group by 'vertice' and apply the function to each group
     df_interpolation = df_interpolation.groupby('vertice').apply(calculate_basis_point_change).reset_index(drop=True)
 
-
+    
     chart_interpolation = chart_lines(df_interpolation, list_venc_interp, st.session_state.toggle_taxa_1, em_bps=toggle_bps)
     containers_painel_2[0].altair_chart(chart_interpolation, use_container_width=False)
 
